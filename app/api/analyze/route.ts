@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { etymologyService } from '@/lib/etymologyService';
+import { translationService } from '@/lib/translationService';
 import { Etymology, SentimentAnalysis, VisualizationConfig } from '@/lib/songParser';
 
 export async function POST(request: Request) {
@@ -99,15 +100,28 @@ async function generateAIEtymologies(words: string[], context: string): Promise<
 
 async function generateTranslation(text: string): Promise<string> {
   try {
-    const { text: translation } = await generateText({
-      model: openai('gpt-4-turbo-preview'),
-      prompt: `Translate this Hindi/Urdu lyric to English. Keep it poetic and contextual:
-      "${text}"
-      
-      Return only the English translation, nothing else.`,
-    });
-
-    return translation;
+    // First try Microsoft Translator for accurate translation
+    const msTranslation = await translationService.translate(text);
+    
+    // If we want poetic enhancement, use AI
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        const { text: poeticTranslation } = await generateText({
+          model: openai('gpt-4-turbo-preview'),
+          prompt: `Given this Hindi/Urdu lyric: "${text}"
+          And its literal translation: "${msTranslation}"
+          
+          Provide a more poetic, contextual English translation that preserves the emotional essence.
+          Return only the poetic translation, nothing else.`,
+        });
+        return poeticTranslation;
+      } catch (error) {
+        console.error('[API] Poetic enhancement failed:', error);
+        return msTranslation;
+      }
+    }
+    
+    return msTranslation;
   } catch (error) {
     console.error('[API] Translation failed:', error);
     return text; // Return original if translation fails

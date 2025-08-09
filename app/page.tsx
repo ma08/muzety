@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import MusicPlayer from '@/components/MusicPlayer';
 import LyricsDisplay from '@/components/LyricsDisplay';
 import SongHeader from '@/components/SongHeader';
 import DynamicBackground from '@/components/DynamicBackground';
-import { LyricLine, parseCSVLyrics } from '@/lib/songParser';
+import EtymologyTimeline from '@/components/EtymologyTimeline';
+import LanguageOriginVisualizer from '@/components/LanguageOriginVisualizer';
+import { LyricLine, parseCSVLyrics, Etymology } from '@/lib/songParser';
 import { motion } from 'framer-motion';
-import { preGeneratedData } from '@/lib/preGeneratedData';
+import { translationService } from '@/lib/translationService';
+import { etymologyService } from '@/lib/etymologyService';
 
 export default function Home() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
@@ -15,6 +18,16 @@ export default function Home() {
   const [currentLyric, setCurrentLyric] = useState<LyricLine | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [analyzedLyrics, setAnalyzedLyrics] = useState<Map<string, LyricLine>>(new Map());
+  const [languageDistribution, setLanguageDistribution] = useState({
+    Sanskrit: 0,
+    Persian: 0,
+    Arabic: 0,
+    Hindi: 0,
+    Urdu: 0,
+    English: 0,
+    Unknown: 0,
+  });
 
   useEffect(() => {
     // Load and parse lyrics
@@ -23,14 +36,7 @@ export default function Home() {
         const response = await fetch('/songs/mast_malang.csv');
         const text = await response.text();
         const parsedLyrics = parseCSVLyrics(text);
-        
-        // Merge with pre-generated data
-        const enhancedLyrics = parsedLyrics.map((lyric, index) => ({
-          ...lyric,
-          ...(preGeneratedData[index] || {}),
-        }));
-        
-        setLyrics(enhancedLyrics);
+        setLyrics(parsedLyrics);
         setIsLoading(false);
       } catch (error) {
         console.error('[ERROR] Loading lyrics failed:', error);
@@ -41,9 +47,121 @@ export default function Home() {
     loadLyrics();
   }, []);
 
-  // Calculate word origins from current lyric's etymology
+  // Analyze lyric when it becomes active
+  const analyzeLyric = useCallback(async (lyric: LyricLine) => {
+    // Check if already analyzed
+    if (analyzedLyrics.has(lyric.id)) {
+      return analyzedLyrics.get(lyric.id)!;
+    }
+
+    try {
+      // Fetch translation
+      const translation = await translationService.translate(lyric.text);
+
+      // Extract words for etymology
+      const words = lyric.text.split(/\s+/)
+        .filter(w => w.length > 2)
+        .map(w => w.replace(/[^\u0900-\u097F\u0600-\u06FFa-zA-Z]/g, ''));
+
+      // Fetch etymologies
+      const etymologies: Record<string, Etymology> = {};
+      for (const word of words) {
+        const etymology = await etymologyService.getEtymology(word);
+        if (etymology) {
+          etymologies[word.toLowerCase()] = etymology;
+        }
+      }
+
+      // Call AI analysis for sentiment and missing etymologies
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: lyric.text,
+          timestamp: lyric.startTime,
+        }),
+      });
+
+      let sentiment, visualization;
+      if (response.ok) {
+        const data = await response.json();
+        sentiment = data.sentiment;
+        visualization = data.visualization;
+        
+        // Merge AI etymologies
+        if (data.etymologies) {
+          Object.assign(etymologies, data.etymologies);
+        }
+      } else {
+        // Default sentiment
+        sentiment = {
+          emotion: 'calm',
+          intensity: 0.5,
+          colors: {
+            primary: '#6366f1',
+            secondary: '#8b5cf6',
+            accent: '#ec4899',
+          },
+        };
+        visualization = {
+          particleEffect: 'waves',
+          animation: 'fade',
+          background: 'linear-gradient(135deg, #6366f120, #8b5cf610)',
+        };
+      }
+
+      const enhancedLyric = {
+        ...lyric,
+        translation,
+        etymology: etymologies,
+        sentiment,
+        visualization,
+      };
+
+      // Update analyzed lyrics
+      setAnalyzedLyrics(prev => new Map(prev).set(lyric.id, enhancedLyric));
+
+      // Update language distribution
+      const distribution = { ...languageDistribution };
+      Object.values(etymologies).forEach((etym) => {
+        const origin = etym.origin as keyof typeof distribution;
+        if (origin in distribution) {
+          distribution[origin]++;
+        } else {
+          distribution.Unknown++;
+        }
+      });
+      setLanguageDistribution(distribution);
+
+      return enhancedLyric;
+    } catch (error) {
+      console.error('[Analysis] Failed to analyze lyric:', error);
+      return lyric;
+    }
+  }, [analyzedLyrics, languageDistribution]);
+
+  // Analyze current lyric when it changes
+  useEffect(() => {
+    if (currentLyric && !analyzedLyrics.has(currentLyric.id)) {
+      analyzeLyric(currentLyric);
+    }
+  }, [currentLyric, analyzeLyric, analyzedLyrics]);
+
+  // Get enhanced lyrics for display
+  const enhancedLyrics = useMemo(() => {
+    return lyrics.map(lyric => 
+      analyzedLyrics.get(lyric.id) || lyric
+    );
+  }, [lyrics, analyzedLyrics]);
+
+  // Get current enhanced lyric
+  const currentEnhancedLyric = useMemo(() => {
+    return currentLyric ? (analyzedLyrics.get(currentLyric.id) || currentLyric) : null;
+  }, [currentLyric, analyzedLyrics]);
+
+  // Calculate word origins from current enhanced lyric's etymology
   const wordOrigins = useMemo(() => {
-    if (!currentLyric?.etymology) return undefined;
+    if (!currentEnhancedLyric?.etymology) return undefined;
     
     const origins = {
       sanskrit: 0,
@@ -52,7 +170,7 @@ export default function Home() {
       english: 0,
     };
     
-    Object.values(currentLyric.etymology).forEach((etym: any) => {
+    Object.values(currentEnhancedLyric.etymology).forEach((etym: any) => {
       const originText = etym.origin?.toLowerCase() || '';
       if (originText.includes('sanskrit') || originText.includes('संस्कृत')) {
         origins.sanskrit++;
@@ -73,11 +191,11 @@ export default function Home() {
       arabic: origins.arabic / total,
       english: origins.english / total,
     };
-  }, [currentLyric]);
+  }, [currentEnhancedLyric]);
 
-  // Dynamic background based on current sentiment
-  const backgroundStyle = currentLyric?.visualization?.background 
-    ? { background: currentLyric.visualization.background }
+  // Dynamic background based on current enhanced lyric's sentiment
+  const backgroundStyle = currentEnhancedLyric?.visualization?.background 
+    ? { background: currentEnhancedLyric.visualization.background }
     : { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
 
   return (
@@ -85,7 +203,7 @@ export default function Home() {
       {/* Dynamic Pattern Background */}
       <DynamicBackground 
         wordOrigins={wordOrigins}
-        sentiment={currentLyric?.sentiment}
+        sentiment={currentEnhancedLyric?.sentiment}
       />
       
       {/* Dynamic Gradient Background */}
@@ -164,11 +282,44 @@ export default function Home() {
 
             {/* Lyrics Display */}
             <LyricsDisplay 
-              lyrics={lyrics}
+              lyrics={enhancedLyrics}
               currentTime={currentTime}
               currentLyric={currentLyric}
               showTranslations={showTranslations}
             />
+            
+            {/* Dynamic Etymology & Language Panels */}
+            <div className="fixed top-32 left-4 z-20 space-y-4 max-w-sm">
+              {/* Language Distribution */}
+              {Object.values(languageDistribution).some(v => v > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <LanguageOriginVisualizer
+                    distribution={languageDistribution}
+                    isActive={true}
+                  />
+                </motion.div>
+              )}
+            </div>
+            
+            {/* Etymology Timeline - Right Side */}
+            <div className="fixed top-32 right-4 z-20 max-w-sm">
+              {currentEnhancedLyric?.etymology && Object.values(currentEnhancedLyric.etymology).length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <EtymologyTimeline
+                    etymology={Object.values(currentEnhancedLyric.etymology)[0]}
+                    isActive={true}
+                  />
+                </motion.div>
+              )}
+            </div>
 
             {/* Music Player */}
             <MusicPlayer

@@ -28,9 +28,14 @@ async function deploy() {
     );
     
     console.log('✅ Deployment successful!');
-    console.log(`🔗 URL: https://${deployment.domains[0]}`);
-    console.log(`📊 Deployment ID: ${deployment.id}`);
-    console.log('\n🎉 Your app is ready for the YC Hackathon!');
+    if (deployment && deployment.domains) {
+      console.log(`🔗 URL: https://${deployment.domains[0]}`);
+    }
+    if (deployment && deployment.id) {
+      console.log(`📊 Deployment ID: ${deployment.id}`);
+    }
+    console.log('\n🎉 Your app is being deployed to Freestyle!');
+    console.log('📌 Check https://admin.freestyle.sh for deployment status');
     
   } catch (error) {
     console.error('❌ Deployment failed:', error);
