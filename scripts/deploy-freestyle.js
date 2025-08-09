@@ -1,8 +1,7 @@
 const { FreestyleSandboxes } = require('freestyle-sandboxes');
-const { execSync } = require('child_process');
 
 async function deploy() {
-  console.log('🚀 Deploying to Freestyle...');
+  console.log('🚀 Deploying Muzety to Freestyle...');
   
   // Check if we have the API key
   const apiKey = process.env.FREESTYLE_API_KEY;
@@ -14,37 +13,24 @@ async function deploy() {
   const freestyle = new FreestyleSandboxes({ apiKey });
 
   try {
-    // First, build the Next.js app
-    console.log('📦 Building Next.js application...');
-    execSync('npm run build', { stdio: 'inherit' });
+    // Deploy from GitHub using the documented approach
+    console.log('🌐 Deploying from GitHub to Freestyle Web...');
     
-    // Initialize git if not already
-    try {
-      execSync('git status', { stdio: 'ignore' });
-    } catch {
-      console.log('📝 Initializing git repository...');
-      execSync('git init', { stdio: 'inherit' });
-      execSync('git add .', { stdio: 'inherit' });
-      execSync('git commit -m "Initial commit for etymology visualizer"', { stdio: 'inherit' });
-    }
-
-    // Deploy to Freestyle
-    console.log('🌐 Deploying to Freestyle Web...');
     const deployment = await freestyle.deployWeb(
       { 
-        kind: 'files',
-        files: '.' // Deploy current directory
+        kind: 'git',
+        url: 'https://github.com/ma08/muzety' // GitHub repo URL
       },
       { 
-        domains: [`etymology-viz-${Date.now()}.style.dev`],
-        build: true,
-        framework: 'nextjs'
+        domains: [`muzety-${Date.now()}.style.dev`],
+        build: true // Automatically detect framework and build
       }
     );
-
+    
     console.log('✅ Deployment successful!');
     console.log(`🔗 URL: https://${deployment.domains[0]}`);
     console.log(`📊 Deployment ID: ${deployment.id}`);
+    console.log('\n🎉 Your app is ready for the YC Hackathon!');
     
   } catch (error) {
     console.error('❌ Deployment failed:', error);
