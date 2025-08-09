@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Etymology Visualizer Music Player
 
-## Getting Started
+An innovative music player that enriches lyrics with etymological insights and dynamic sentiment-based visualizations. Built for the YC AI Coding Agents Hackathon using Freestyle infrastructure.
 
-First, run the development server:
+## Features
 
+### Etymology Exploration
+- Hover over words to see their linguistic origins
+- View word evolution timelines (Sanskrit, Persian, Arabic origins)
+- Discover related words and meanings
+- Wiktionary-style tooltips with rich linguistic data
+
+### Dynamic Visualizations
+- **Sentiment-based backgrounds**: Colors change based on lyric emotion
+- **Particle effects**: Different effects for different moods
+  - Bubbles for joy
+  - Falling leaves for melancholy
+  - Sparks for energy
+  - Waves for calm
+  - Stars for passion
+- **Real-time UI adaptation**: Visual elements respond to music timestamps
+
+### Music Player
+- Synchronized lyrics display
+- Smooth scrolling and transitions
+- Volume control and seek functionality
+- Powered by Howler.js for reliable audio playback
+
+## Tech Stack
+
+- **Next.js 14** with TypeScript
+- **Tailwind CSS** for styling
+- **Framer Motion** for animations
+- **Howler.js** for audio playback
+- **Freestyle SDK** for deployment and serverless functions
+- **Vercel AI SDK** for etymology and sentiment analysis
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Freestyle API key (get from [Freestyle Dashboard](https://admin.freestyle.sh))
+- OpenAI API key (for etymology analysis)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [your-repo-url]
+cd etymology-viz
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+Create a `.env.local` file with:
+```
+FREESTYLE_API_KEY=your_freestyle_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Deploy to Freestyle
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run deploy:freestyle
+```
 
-## Deploy on Vercel
+This will:
+1. Build the Next.js application
+2. Deploy to Freestyle's infrastructure
+3. Provide you with a `.style.dev` URL
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Hackathon Categories
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project fits two YC Hackathon categories:
+
+### Autonomous Reactive Agents
+- Responds to audio timestamps automatically
+- No human prompts needed during playback
+- Adapts UI based on non-human signals (music timing)
+
+### Just-in-Time Software
+- UI changes dynamically as the song plays
+- Each lyric line gets unique visualization
+- Real-time sentiment-based adaptations
+
+## Features Showcase
+
+### Current Song: "Mast Malang"
+- Hindi/Urdu lyrics with rich etymological history
+- Sufi and Sanskrit word origins
+- Cultural context preservation
+
+### Etymology Examples
+- **मलंग** (Malang): Persian/Sufi origin meaning "mystic wanderer"
+- **वसुंधरा** (Vasundhara): Sanskrit meaning "Earth, holder of wealth"
+- **संगीत** (Sangeet): Sanskrit origin meaning "harmonious sound"
+
+## Built with Freestyle for YC AI Coding Agents Hackathon
+
+Using **Freestyle** infrastructure for deployment and management of dynamically generated UI components.
