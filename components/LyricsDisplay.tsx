@@ -9,12 +9,14 @@ interface LyricsDisplayProps {
   lyrics: LyricLine[];
   currentTime: number;
   currentLyric: LyricLine | null;
+  showTranslations?: boolean;
 }
 
 export default function LyricsDisplay({ 
   lyrics, 
   currentTime, 
-  currentLyric 
+  currentLyric,
+  showTranslations = false
 }: LyricsDisplayProps) {
   const [visibleLyrics, setVisibleLyrics] = useState<LyricLine[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,9 +51,9 @@ export default function LyricsDisplay({
   return (
     <div 
       ref={containerRef}
-      className="flex-1 overflow-y-auto min-h-screen pb-32 pt-20 px-8"
+      className="flex-1 overflow-y-auto min-h-[70vh] pt-8 px-4 md:px-8 flex items-center justify-center"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl w-full mx-auto">
         <AnimatePresence mode="popLayout">
           {visibleLyrics.map((lyric, index) => {
             const isActive = currentLyric?.id === lyric.id;
@@ -64,9 +66,9 @@ export default function LyricsDisplay({
                 ref={isActive ? activeLineRef : null}
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ 
-                  opacity: isActive ? 1 : isPast ? 0.3 : isFuture ? 0.5 : 0.7,
+                  opacity: isActive ? 1 : isPast ? 0.2 : isFuture ? 0.4 : 0.6,
                   y: 0,
-                  scale: isActive ? 1.05 : 1,
+                  scale: isActive ? 1.1 : 0.95,
                 }}
                 exit={{ opacity: 0, y: -50 }}
                 transition={{ 
@@ -74,7 +76,7 @@ export default function LyricsDisplay({
                   ease: "easeInOut"
                 }}
                 className={`
-                  my-8 transition-all duration-500
+                  my-12 transition-all duration-500
                   ${isActive ? 'z-10' : 'z-0'}
                 `}
               >
@@ -83,6 +85,7 @@ export default function LyricsDisplay({
                   isActive={isActive}
                   isPast={isPast}
                   isFuture={isFuture}
+                  showTranslation={showTranslations}
                 />
               </motion.div>
             );

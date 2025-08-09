@@ -3,6 +3,7 @@ export interface LyricLine {
   startTime: number; // in seconds
   endTime: number;
   text: string;
+  translation?: string;
   etymology?: Record<string, Etymology>;
   sentiment?: SentimentAnalysis;
   visualization?: VisualizationConfig;
@@ -41,12 +42,10 @@ export interface Song {
 
 export function parseCSVLyrics(csvContent: string): LyricLine[] {
   const lines = csvContent.trim().split('\n');
-  console.log('[parseCSV] Processing', lines.length, 'lines');
   
   return lines.map((line, index) => {
     const parts = line.split(',');
     if (parts.length < 4) {
-      console.warn('[parseCSV] Skipping invalid line:', line);
       return null;
     }
     
@@ -56,8 +55,6 @@ export function parseCSVLyrics(csvContent: string): LyricLine[] {
     const startTime = parseFloat(startTimeStr);
     const duration = parseFloat(durationStr);
     const endTime = startTime + duration;
-    
-    console.log(`[parseCSV] Line ${index}: "${text}" from ${startTime}s to ${endTime}s`);
     
     return {
       id: `line-${index}`,

@@ -23,10 +23,9 @@ export default function MusicPlayer({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.7);
   const soundRef = useRef<Howl | null>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    console.log('[MusicPlayer] Initializing Howler with:', audioFile);
     
     // Clean up previous instance
     if (soundRef.current) {
@@ -40,16 +39,13 @@ export default function MusicPlayer({
         html5: true, // Force HTML5 Audio
         volume: volume,
         preload: true,
-        onload: function() {
+        onload: function(this: Howl) {
           const dur = this.duration();
-          console.log('[MusicPlayer] Audio loaded successfully, duration:', dur);
           setDuration(dur);
         },
         onplay: function() {
-          console.log('[MusicPlayer] Audio started playing');
         },
         onend: function() {
-          console.log('[MusicPlayer] Audio ended');
           setIsPlaying(false);
           setCurrentTime(0);
         },
@@ -86,7 +82,7 @@ export default function MusicPlayer({
   }, [volume]);
 
   const updateTime = () => {
-    if (soundRef.current) {
+    if (soundRef.current && soundRef.current.playing()) {
       const current = soundRef.current.seek() as number;
       
       // Check if we got a valid time
@@ -102,42 +98,34 @@ export default function MusicPlayer({
           (lyric) => current >= lyric.startTime && current < lyric.endTime
         );
         
-        if (currentLyric) {
-          console.log('[MusicPlayer] Current lyric:', currentLyric.text, 'at', current.toFixed(2));
-        }
-        
         if (onLyricChange) {
           onLyricChange(currentLyric || null);
         }
       }
 
-      // Continue animation loop only if playing
-      if (isPlaying) {
-        animationRef.current = requestAnimationFrame(updateTime);
-      }
+      // Continue animation loop
+      animationRef.current = requestAnimationFrame(updateTime);
     }
   };
 
   // Start/stop animation loop when playing state changes
   useEffect(() => {
     if (isPlaying) {
-      console.log('[MusicPlayer] Starting animation loop');
       updateTime();
-    } else {
-      console.log('[MusicPlayer] Stopping animation loop');
+    }
+    
+    return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-    }
-  }, [isPlaying, lyrics]);
+    };
+  }, [isPlaying]);
 
   const togglePlayPause = () => {
     if (!soundRef.current) {
-      console.warn('[MusicPlayer] No sound ref available');
       return;
     }
 
-    console.log('[MusicPlayer] Toggle play/pause, current state:', isPlaying);
     
     if (isPlaying) {
       soundRef.current.pause();
@@ -166,9 +154,9 @@ export default function MusicPlayer({
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-black/70 backdrop-blur-lg p-6 border-t border-white/10"
+      className="w-full max-w-2xl mx-auto mt-8 mb-8 px-6"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
         {/* Progress Bar */}
         <div className="mb-4">
           <input
@@ -186,8 +174,24 @@ export default function MusicPlayer({
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-6">
-          {/* Play/Pause Button */}
+        <div className="flex items-center justify-between">
+          {/* Volume Control (Left) */}
+          <div className="flex items-center gap-2 w-32">
+            <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+            </svg>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+            />
+          </div>
+
+          {/* Play/Pause Button (Center) */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -205,21 +209,8 @@ export default function MusicPlayer({
             )}
           </motion.button>
 
-          {/* Volume Control */}
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-            </svg>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
-            />
-          </div>
+          {/* Spacer for balance */}
+          <div className="w-32" />
         </div>
       </div>
     </motion.div>

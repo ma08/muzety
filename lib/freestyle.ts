@@ -5,6 +5,9 @@ export const freestyle = new FreestyleSandboxes({
 });
 
 // Function to execute serverless code for etymology/sentiment analysis
+// Note: The execute method is not available in the current Freestyle SDK version
+// This function is preserved for future implementation when the API is available
+/*
 export async function executeAnalysis(code: string): Promise<any> {
   try {
     const result = await freestyle.execute({
@@ -17,6 +20,7 @@ export async function executeAnalysis(code: string): Promise<any> {
     throw error;
   }
 }
+*/
 
 // Function to deploy to Freestyle Web
 export async function deployToFreestyle(gitUrl: string, domain?: string) {

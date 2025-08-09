@@ -2,12 +2,14 @@ import { Etymology, SentimentAnalysis, VisualizationConfig } from './songParser'
 
 // Pre-generated data for demo (normally would be generated via AI)
 export const preGeneratedData: Array<{
+  translation?: string;
   etymology: Record<string, Etymology>;
   sentiment: SentimentAnalysis;
   visualization: VisualizationConfig;
 }> = [
   // Line 1: "शो मोर"
   {
+    translation: "Show more",
     etymology: {},
     sentiment: {
       emotion: 'energy',
@@ -26,6 +28,7 @@ export const preGeneratedData: Array<{
   },
   // Line 2: "[संगीत]"
   {
+    translation: "[Music]",
     etymology: {
       'संगीत': {
         word: 'संगीत',
@@ -52,6 +55,7 @@ export const preGeneratedData: Array<{
   },
   // Line 3: "कि फ्रंट जा अपने ही रंग तू तू"
   {
+    translation: "Go forth in your own colors, you",
     etymology: {
       'रंग': {
         word: 'रंग',
@@ -78,6 +82,7 @@ export const preGeneratedData: Array<{
   },
   // Line 4: "कि हो जहां अपने ही संधू ए"
   {
+    translation: "Where you are in your own essence",
     etymology: {
       'जहां': {
         word: 'जहां',
@@ -122,6 +127,7 @@ export const preGeneratedData: Array<{
   },
   // Line 6: "एक व्यक्ति जहां अपने ही रंग तू हो जहां"
   {
+    translation: "A person where you are in your own colors",
     etymology: {
       'व्यक्ति': {
         word: 'व्यक्ति',
@@ -155,6 +161,7 @@ export const preGeneratedData: Array<{
   },
   // Line 7: "अपने हिसंक तू बना ले छोटी सी दुनिया आज"
   {
+    translation: "Create your own small world today",
     etymology: {
       'दुनिया': {
         word: 'दुनिया',
@@ -181,6 +188,7 @@ export const preGeneratedData: Array<{
   },
   // Line 8: "हम अक्षत मलंग पूज ा"
   {
+    translation: "We are the untouched mystic wanderers in worship",
     etymology: {
       'मलंग': {
         word: 'मलंग',
@@ -214,6 +222,7 @@ export const preGeneratedData: Array<{
   },
   // Line 9: "मैं बोलूं बोलो"
   {
+    translation: "I speak, you speak",
     etymology: {
       'बोलूं': {
         word: 'बोलूं',
@@ -240,6 +249,7 @@ export const preGeneratedData: Array<{
   },
   // Line 10: "वसुंधरा बोलूं तुम क्यों"
   {
+    translation: "I speak of the earth, why do you?",
     etymology: {
       'वसुंधरा': {
         word: 'वसुंधरा',

@@ -1,27 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LyricLine as LyricLineType } from '@/lib/songParser';
 import EtymologyCard from './EtymologyCard';
+import TranslationOverlay from './TranslationOverlay';
 
 interface LyricLineProps {
   lyric: LyricLineType;
   isActive: boolean;
   isPast: boolean;
   isFuture: boolean;
+  showTranslation?: boolean;
 }
 
 export default function LyricLine({ 
   lyric, 
   isActive, 
   isPast, 
-  isFuture 
+  isFuture,
+  showTranslation = false
 }: LyricLineProps) {
   const [hoveredWord, setHoveredWord] = useState<string | null>(null);
   
+  // Use translation if enabled and available, otherwise use original text
+  const displayText = showTranslation && lyric.translation ? lyric.translation : lyric.text;
+  
   // Split text into words for individual interaction
-  const words = lyric.text.split(/\s+/);
+  const words = displayText.split(/\s+/);
   const hasEtymology = (word: string) => {
     const cleanWord = word.toLowerCase().replace(/[^a-z0-9अ-ह]/gi, '');
     return lyric.etymology && lyric.etymology[cleanWord];
@@ -45,7 +51,7 @@ export default function LyricLine({
   return (
     <motion.div
       className={`
-        relative rounded-2xl p-8 transition-all duration-700
+        relative rounded-2xl p-8 md:p-12 transition-all duration-700
         ${isActive ? 'border-2' : 'border border-transparent'}
       `}
       style={sentimentStyles}
@@ -62,8 +68,8 @@ export default function LyricLine({
       <div className={`relative z-10 text-center ${textColor}`}>
         <motion.div
           className={`
-            text-2xl md:text-4xl font-light leading-relaxed
-            ${isActive ? 'font-normal' : ''}
+            text-3xl md:text-5xl lg:text-6xl font-light leading-relaxed
+            ${isActive ? 'font-normal text-white' : ''}
           `}
           animate={{
             letterSpacing: isActive ? '0.05em' : '0em',
@@ -74,37 +80,52 @@ export default function LyricLine({
             const etymology = lyric.etymology?.[cleanWord];
             
             return (
-              <span key={index} className="relative inline-block mx-1">
-                <motion.span
-                  className={`
-                    cursor-pointer relative
-                    ${etymology ? 'border-b-2 border-dotted border-white/30' : ''}
-                  `}
-                  onHoverStart={() => etymology && setHoveredWord(cleanWord)}
-                  onHoverEnd={() => setHoveredWord(null)}
-                  whileHover={etymology ? { 
-                    scale: 1.1,
-                    color: lyric.sentiment?.colors.accent,
-                  } : {}}
-                  transition={{ duration: 0.2 }}
-                >
-                  {word}
-                </motion.span>
-                
-                {/* Etymology Tooltip */}
-                <AnimatePresence>
-                  {hoveredWord === cleanWord && etymology && (
-                    <EtymologyCard 
-                      etymology={etymology}
-                      colors={lyric.sentiment?.colors}
-                    />
-                  )}
-                </AnimatePresence>
-              </span>
+              <React.Fragment key={index}>
+                <span className="relative inline-block">
+                  <motion.span
+                    className={`
+                      cursor-pointer relative
+                      ${!showTranslation && etymology ? 'border-b-2 border-dotted border-white/30' : ''}
+                    `}
+                    onHoverStart={() => !showTranslation && etymology && setHoveredWord(cleanWord)}
+                    onHoverEnd={() => setHoveredWord(null)}
+                    whileHover={!showTranslation && etymology ? { 
+                      scale: 1.1,
+                      color: lyric.sentiment?.colors.accent,
+                    } : {}}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {word}
+                  </motion.span>
+                  
+                  {/* Etymology Tooltip - only show for original text */}
+                  <AnimatePresence>
+                    {!showTranslation && hoveredWord === cleanWord && etymology && (
+                      <EtymologyCard 
+                        etymology={etymology}
+                        colors={lyric.sentiment?.colors}
+                      />
+                    )}
+                  </AnimatePresence>
+                </span>
+                {/* Add space after each word except the last */}
+                {index < words.length - 1 && ' '}
+              </React.Fragment>
             );
           })}
         </motion.div>
       </div>
+
+      {/* Show subtitle-style translation when in original mode */}
+      {!showTranslation && isActive && lyric.translation && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 0.7, y: 0 }}
+          className="mt-4 text-center text-lg md:text-xl text-white/60 italic"
+        >
+          {lyric.translation}
+        </motion.div>
+      )}
 
       {/* Sentiment Indicator */}
       {isActive && lyric.sentiment && (

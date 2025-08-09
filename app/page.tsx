@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import MusicPlayer from '@/components/MusicPlayer';
 import LyricsDisplay from '@/components/LyricsDisplay';
+import SongHeader from '@/components/SongHeader';
+import DynamicBackground from '@/components/DynamicBackground';
 import { LyricLine, parseCSVLyrics } from '@/lib/songParser';
 import { motion } from 'framer-motion';
 import { preGeneratedData } from '@/lib/preGeneratedData';
@@ -12,26 +14,21 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [currentLyric, setCurrentLyric] = useState<LyricLine | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     // Load and parse lyrics
     async function loadLyrics() {
-      console.log('[DEBUG] Starting to load lyrics...');
       try {
         const response = await fetch('/songs/mast_malang.csv');
         const text = await response.text();
-        console.log('[DEBUG] CSV loaded, first 100 chars:', text.substring(0, 100));
-        
         const parsedLyrics = parseCSVLyrics(text);
-        console.log('[DEBUG] Parsed lyrics count:', parsedLyrics.length);
-        console.log('[DEBUG] First lyric:', parsedLyrics[0]);
         
         // Merge with pre-generated data
         const enhancedLyrics = parsedLyrics.map((lyric, index) => ({
           ...lyric,
           ...(preGeneratedData[index] || {}),
         }));
-        console.log('[DEBUG] Enhanced lyrics sample:', enhancedLyrics[0]);
         
         setLyrics(enhancedLyrics);
         setIsLoading(false);
@@ -44,6 +41,40 @@ export default function Home() {
     loadLyrics();
   }, []);
 
+  // Calculate word origins from current lyric's etymology
+  const wordOrigins = useMemo(() => {
+    if (!currentLyric?.etymology) return undefined;
+    
+    const origins = {
+      sanskrit: 0,
+      persian: 0,
+      arabic: 0,
+      english: 0,
+    };
+    
+    Object.values(currentLyric.etymology).forEach((etym: any) => {
+      const originText = etym.origin?.toLowerCase() || '';
+      if (originText.includes('sanskrit') || originText.includes('संस्कृत')) {
+        origins.sanskrit++;
+      } else if (originText.includes('persian') || originText.includes('फ़ारसी')) {
+        origins.persian++;
+      } else if (originText.includes('arabic') || originText.includes('अरबी')) {
+        origins.arabic++;
+      } else if (originText.includes('english')) {
+        origins.english++;
+      }
+    });
+    
+    // Normalize to 0-1 range
+    const total = Math.max(1, Object.values(origins).reduce((a, b) => a + b, 0));
+    return {
+      sanskrit: origins.sanskrit / total,
+      persian: origins.persian / total,
+      arabic: origins.arabic / total,
+      english: origins.english / total,
+    };
+  }, [currentLyric]);
+
   // Dynamic background based on current sentiment
   const backgroundStyle = currentLyric?.visualization?.background 
     ? { background: currentLyric.visualization.background }
@@ -51,7 +82,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Dynamic Background */}
+      {/* Dynamic Pattern Background */}
+      <DynamicBackground 
+        wordOrigins={wordOrigins}
+        sentiment={currentLyric?.sentiment}
+      />
+      
+      {/* Dynamic Gradient Background */}
       <motion.div 
         className="fixed inset-0 z-0"
         animate={backgroundStyle}
@@ -80,6 +117,18 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowTranslations(!showTranslations)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    showTranslations 
+                      ? 'bg-white/20 text-white border border-white/30' 
+                      : 'bg-white/10 text-white/70 border border-white/20'
+                  }`}
+                >
+                  {showTranslations ? '🌐 English' : '📜 Original'}
+                </motion.button>
                 <span className="text-xs text-white/40 px-3 py-1 rounded-full border border-white/20">
                   Powered by Freestyle
                 </span>
@@ -105,19 +154,20 @@ export default function Home() {
             </motion.div>
           </div>
         ) : (
-          <>
-            {/* Debug Info */}
-            <div className="fixed top-20 left-4 bg-black/80 text-white p-2 rounded text-xs z-30">
-              <div>Time: {currentTime.toFixed(2)}s</div>
-              <div>Current: {currentLyric?.text || 'None'}</div>
-              <div>Lyrics Count: {lyrics.length}</div>
-            </div>
-            
+          <div className="flex flex-col min-h-screen">
+            {/* Song Header */}
+            <SongHeader 
+              title="मस्त मलंग"
+              artist="Sufi Traditional"
+              language="Hindi/Urdu"
+            />
+
             {/* Lyrics Display */}
             <LyricsDisplay 
               lyrics={lyrics}
               currentTime={currentTime}
               currentLyric={currentLyric}
+              showTranslations={showTranslations}
             />
 
             {/* Music Player */}
@@ -127,7 +177,7 @@ export default function Home() {
               onTimeUpdate={setCurrentTime}
               onLyricChange={setCurrentLyric}
             />
-          </>
+          </div>
         )}
       </div>
 
